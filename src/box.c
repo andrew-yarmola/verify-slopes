@@ -1,8 +1,14 @@
 #include <stdlib.h>
 #include "box.h"
 
-double scale[6];
-static bool scale_initialized = false; 
+double scale[6] = {
+  pow(2., -0. / 6.),
+  pow(2., -1. / 6.),
+  pow(2., -2. / 6.),
+  pow(2., -3. / 6.),
+  pow(2., -4. / 6.),
+  pow(2., -5. / 6.)
+};
 
 void compute_center_and_size(Box& box)
 {
@@ -13,7 +19,8 @@ void compute_center_and_size(Box& box)
     // center + size >= true_center + true_size
     // where box operations are floating point. 
     box.center[i] = scale[i] * box.center_digits[i];
-    box.size[i]= (1 + 2 * EPS) * (box.size_digits[i] * scale[i] + HALFEPS * fabs(box.center_digits[i]));
+    box.size[i] = (1 + 2 * EPS) * (box.size_digits[i] * scale[i]
+        + HALFEPS * fabs(box.center_digits[i]));
   }
 }
 
@@ -47,30 +54,35 @@ void compute_nearer(Box& box)
     if (box.center_digits[i] > 0 && // center is positive 
         box.center_digits[i] > box.size_digits[i] &&  // true diff is positive
         box.center[i]        > box.size[i]) { // machine diff is >= 0
-      // Want lower bound on true_center - true_size.  Assume no overflow or underflow 
-      // Note, sign(center_digits) == sign(center), unless center == 0. Also, size is always >= 0. 
+      // Want lower bound on true_center - true_size.
+      // Assume no overflow or underflow. 
+      // Note, sign(center_digits) == sign(center), unless center == 0.
+      // Also, size is always >= 0. 
       // GMT paper page 419 of Annals gives with true arithmetic
-      //      center - size <= true_center - true_size
+      //     center - size <= true_center - true_size
       // Now, in machine arthimetric, by IEEE, if 
-      //      center > size then center (-) size >= 0.
+      //     center > size then center (-) size >= 0.
       // Lemma 7.0 gives,
-      //      (1-EPS)(*)( center (-) size ) <= center - size <= true_center - size. 
-      m[i] = (1 - EPS) * (box.center[i] - box.size[i]);
+      //     (1-EPS)(*)( center (-) size ) <= center - size <= true_center - size. 
+      m[i] =   (1 - EPS) * (box.center[i] - box.size[i]);
     } else if (box.center_digits[i] < 0 && // center is negative
         box.center_digits[i] < -box.size_digits[i] && // true sum is negative
         box.center[i]        < -box.size[i]) {  // machine sum is negative
-      // Want upper bound on true_center - true_size.  Assume no overflow or underflow
-      // Note, sign(center_digits) == sign(center), unless center == 0. Also, size is always >= 0. 
+      // Want upper bound on true_center - true_size.
+      // Assume no overflow or underflow.
+      // Note, sign(center_digits) == sign(center), unless center == 0.
+      // Also, size is always >= 0. 
       // GMT paper page 419 of Annals gives with true arithmetic
-      //      true_center + true_size <= center + size
+      //     true_center + true_size <= center + size
       // Now, in machine arthimetric, by IEEE, if 
-      //      -center > size then (-center) (-) size >= 0.
+      //     -center > size then (-center) (-) size >= 0.
       // Lemma 7.0 gives,
-      //      (1-EPS)(*)( (-center) (-) size ) <= -center - size <= -true_center - true_size.
+      //       (1-EPS)(*)( (-center) (-) size ) <= -center - size <=
+      //                                        <= -true_center - true_size.
       // So,
-      //      -((1-EPS)(*)( (-center) (-) size )) >= true_center + true_size.
+      //     -((1-EPS)(*)( (-center) (-) size )) >= true_center + true_size.
       // Note, negation is exact for machine numbers
-      m[i] = -(( 1 - EPS) * ((-box.center[i]) - box.size[i]));
+      m[i] = -((1 - EPS) * ((-box.center[i]) - box.size[i]));
     }
   }
 
@@ -85,24 +97,29 @@ void compute_further(Box& box)
   for (int i = 0; i < 6; ++i) {
     m[i] = 0; // inconclusive cases
     if (box.center_digits[i] > -box.size_digits[i]) { // true sum is positive 
-      // Want upper bound of true_center + true_size. Assume no overflow or underflow
-      // Note, sign(center_digits) == sign(center), unless center == 0. Also, size is always >= 0. 
+      // Want upper bound of true_center + true_size.
+      // Assume no overflow or underflow.
+      // Note, sign(center_digits) == sign(center), unless center == 0.
+      // Also, size is always >= 0. 
       // GMT paper page 419 of Annals gives with true arithmetic
-      //      true_center + true_size <= center + size
+      //     true_center + true_size <= center + size
       // By IEEE (+) and (-) resepct <= and >=, so center (+) size >=0 and
       // Lemma 7.0 for floating point arithmetic gives and upper bound
-      //      (1+EPS)(*)(center (+) size) >= center + size >= true_center + true_size
-      m[i] = (1 + EPS) * (box.center[i] + box.size[i]);
+      //     (1+EPS)(*)(center (+) size) >= center + size >= true_center + true_size
+      m[i] =   (1 + EPS) * (box.center[i] + box.size[i]);
     } else { // true sum is <= 0
-      // Want lower bound of true_center - true_size. Assume no overflow or underflow
+      // Want lower bound of true_center - true_size.
+      // Assume no overflow or underflow.
       // Note, sign(center_digits) == sign(center), unless center == 0 
       // GMT paper page 419 of Annals gives with true arithmetic
-      //      center - size <= true_center - true_size
+      //     center - size <= true_center - true_size
       // By IEEE, (+) and (-) respects <= and >=, and negation is exact.
-      // Thus, (-center) (+) size >=0 and Lemma 7.0 for floating point arithmetic gives
-      //        (1+EPS)(*)( (-center) (+) size) ) >= (-center) + size
+      // Thus, (-center) (+) size >=0 and 
+      // Lemma 7.0 for floating point arithmetic gives
+      //       (1+EPS)(*)( (-center) (+) size) ) >= (-center) + size
       // So,
-      //      -((1+EPS)(*)( (-center) (+) size) ))<= center - size <= true_center - true_size
+      //     -((1+EPS)(*)( (-center) (+) size) )) <= center - size <=
+      //                                          <= true_center - true_size
       m[i] = -((1 + EPS) * ((-box.center[i]) + box.size[i]));
     }
   }
@@ -118,27 +135,35 @@ void compute_greater(Box& box)
   for (int i = 0; i < 6; ++i) {
     m[i] = 0; // inconclusive cases
     if (box.center_digits[i] > -box.size_digits[i]) { // true sum is positive
-      // Want upper bound of true_center + true_size. Assume no overflow or underflow
-      // Note, sign(center_digits) == sign(center), unless center == 0. Also, size is always >= 0. 
+      // Want upper bound of true_center + true_size.
+      // Assume no overflow or underflow.
+      // Note, sign(center_digits) == sign(center), unless center == 0.
+      // Also, size is always >= 0. 
       // GMT paper page 419 of Annals gives with true arithmetic
-      //      true_center + true_size <= center + size.
+      //     true_center + true_size <= center + size.
       // Notice that center + size >= true_center + true_size > 0.
-      // By IEEE, center (+) size >=0, as it's guanrateed to evaluate to nearest representable.
+      // By IEEE, center (+) size >=0,
+      // as it's guanrateed to evaluate to nearest representable.
       // Lemma 7.0 for floating point arithmetic gives and upper bound
-      //      (1+EPS)(*)(center (+) size) >= center + size >= true_center + true_size
-      m[i] = (1 + EPS) * (box.center[i] + box.size[i]);
+      //       (1+EPS)(*)(center (+) size) >= center + size >=
+      //                                   >= true_center + true_size
+      m[i] =   (1 + EPS) * (box.center[i] + box.size[i]);
     } else if (box.center_digits[i] < -box.size_digits[i] && // true sum is negative
         box.center[i]        < -box.size[i]) { // machine sum is <= 0
-      // Want upper bound of true_center + true_size. Assume no overflow or underflow
-      // Note, sign(center_digits) == sign(center), unless center == 0. Also, size is always >= 0. 
+      // Want upper bound of true_center + true_size.
+      // Assume no overflow or underflow.
+      // Note, sign(center_digits) == sign(center), unless center == 0.
+      // Also, size is always >= 0. 
       // GMT paper page 419 of Annals gives with true arithmetic
-      //      true_center + true_size <= center + size.
+      //     true_center + true_size <= center + size.
       // Notice that center + size < 0.
-      // By IEEE, center (+) size <= 0, as it's guanrateed to evaluate to nearest representable.
+      // By IEEE, center (+) size <= 0,
+      // as it's guanrateed to evaluate to nearest representable.
       // Lemma 7.0 for floating point arithmetic gives a bound
-      //      (1-EPS)(*)| center (+) size | < | center + size |
+      //       (1-EPS)(*)| center (+) size | < | center + size |
       // So,
-      //      -((1-EPS)(*)(-(center (+) size))) >= center + size >= true_center + true_size
+      //     -((1-EPS)(*)(-(center (+) size))) >= center + size
+      //                                       >= true_center + true_size
       m[i] = -((1 - EPS) * (-(box.center[i] + box.size[i])));
     }
   }
@@ -150,17 +175,6 @@ void compute_greater(Box& box)
 
 Box build_box(char* where) {
   Box box;
-  // Global scaling of boxes - runs once
-  if (!scale_initialized) {
-    for (int i = 0; i < 6; ++i) {
-      scale[i] = pow(2, -i / 6.0);
-    }
-    scale_initialized = true;
-  } 
-  for (int i = 0; i < 6; ++i) {
-    box.center_digits[i] = 0;
-    box.size_digits[i] = 8;
-  }
   size_t pos = 0;
   size_t idx = 0;
   int dir;
@@ -189,3 +203,44 @@ Box build_box(char* where) {
   return box;    
 }
 
+double disk_scale[2] = {
+  pow(2., -0. / 2.),
+  pow(2., -1. / 2.)
+};
+
+void compute_center_and_radius(Rect& disk) {
+	for (int i = 0; i < 2; ++i) {
+    // GMT paper page 419 of Annals
+    // disk_size guarantees that :
+    // disk_center - disk_size <= true_center - true_size
+    // disk_center + disk_size >= true_center + true_size
+    // where box operations are floating point. 
+    disk.center[i] = disk_scale[i] * disk.center_digits[i];
+    disk.size[i] = (1 + 2 * EPS) * (disk.size_digits[i] * disk_scale[i] +
+        HALFEPS * fabs(disk.center_digits[i]));
+  }
+  // Notice that the center and radius of a disk are constant and do not
+  // depend on (z1, z2, z3). In particular, this is used like interval arithmetic.
+  disk.c = ACJ(XComplex(disk.center[1], disk.center[0]), 0., 0., 0.);
+  disk.r = ACJ(XComplex(disk.size[1],   disk.size[0]),   0., 0., 0.);
+}
+
+Rect initial_lattice_cover() {
+	Rect child(disk);
+	child.size_digits[child.pos] *= 0.5;
+	child.center_digits[child.pos] += (2 * dir - 1) * child.size_digits[child.pos];
+	++child.pos;
+	if (child.pos == 2) { child.pos = 0; }
+  compute_center_and_radius(child);
+	return child;
+}
+
+Rect child(const Rect& disk, int dir) {
+	Rect child(disk);
+	child.size_digits[pos] *= 0.5;
+	child.center_digits[pos] += (2 * dir - 1) * child.size_digits[pos];
+	++child.pos;
+	if (child.pos == 2) { child.pos = 0; }
+  child.compute_center_and_radius();
+	return child;
+}

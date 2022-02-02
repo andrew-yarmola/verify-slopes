@@ -42,6 +42,6 @@ void verify_killed(char* where, char* word);
 
 void verify_len(char* where, char* word, int g_len);
 
-void verify_variety(char* where, char* variety);
+void verify_variety(char* where, char* word);
 
 #endif // _elimination_h_

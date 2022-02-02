@@ -1,6 +1,7 @@
-CC := g++ -Wall -mfpmath=sse -mieee-fp -mno-fma -mno-fma4
-CXX := g++ -Wall -mfpmath=sse -mieee-fp -mno-fma -mno-fma4
+CC := g++ -Wall -mfpmath=sse -mieee-fp -mno-fma -mno-fma4 -std=c++11 
+CXX := g++ -Wall -mfpmath=sse -mieee-fp -mno-fma -mno-fma4 -std=c++11 
 COMMON := ACJ.o box.o elimination.o SL2ACJ.o Complex.o roundoff.o
+FOO := ACJ.o SL2ACJ.o Complex.o roundoff.o
 
 verify: verify.o $(COMMON)
 	$(CC) verify.o $(COMMON) -lm -o ../bin/verify
@@ -10,6 +11,9 @@ identify: identify.o $(COMMON)
 
 rootcat: rootcat.o
 	$(CC) rootcat.o -o ../bin/rootcat
+
+foo: foo.o $(FOO)
+	$(CC) foo.o $(FOO) -lm -o foo
 
 # never optimize here, since the timing of arithmetic is important
 tests: test_underflow.o test_overflow.o test_powers.o roundoff.o
