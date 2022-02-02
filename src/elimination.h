@@ -38,10 +38,20 @@ const bool not_identity(const SL2ACJ& x);
 
 const bool large_horoball(const SL2ACJ& x, const ACJParams& p);
 
-void verify_killed(char* where, char* word);
+void verify_large_horoball(char* where, char* word);
 
-void verify_len(char* where, char* word, int g_len);
+void verify_g_length(char* where, char* word, int g_len);
 
 void verify_variety(char* where, char* word);
+
+void verify_variety_g_length(char* where, char* word, int g_len);
+
+void verify_short_parabolic(char* where, char* word);
+
+void verify_bad_parabolic(char* where, char* word);
+         
+void verify_bad_elliptic(char* where, char* word, char* core);
+
+void verify_no_e2_horoball(char* where);
 
 #endif // _elimination_h_

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "elimination.h"
 
-double max_area = 5.93;
+double max_area = 5.95;
 double e2_area_min = 5.65; 
 double one_over_e2_min = 0.92593;
 
@@ -31,13 +31,38 @@ void verify(char* where, size_t depth, size_t* count_ptr)
         case '6': {
             verify_out_of_bounds(where, code[0]);
             break; }
+        case '9': {
+            verify_no_e2_horoball(where);
+            break; }
         case 'K': { // Line has format  K(word) - killer word
             parse_word(code);
-            verify_killed(where, code);
+            verify_large_horoball(where, code);
             break; }
         case 'S': { // Line has format S(word) - g-length 7 word
             parse_word(code);
-            verify_len(where, code, 7);
+            verify_g_length(where, code, 7);
+            break; }
+        case 'V': { // Line has format V(word)
+            parse_word(code);
+            verify_variety_g_length(where, code, 7);
+            break; }
+        case 'Q': { // Line has format Q(word)
+            parse_word(code);
+            verify_short_parabolic(where, code);
+            break; }
+        case 'L': { // Line has format L(word)
+            parse_word(code);
+            verify_bad_parabolic(where, code);
+            break; }
+        case 'E': { // Line has format E(word)
+            word_pair p = get_word_pair(code);
+            verify_bad_elliptic(where, p.first, p.second);
+            break; }
+        case 'T': { // Line has format T(word,word) - variety intersection
+            word_pair p = get_word_pair(code);
+            verify_variety(where, p.first);
+            verify_variety(where, p.second);
+            printf("Valid variety intersection: %s and %s\n", p.first, p.second);
             break; }
         // We fail by default, guaranteeing completes on the tree
         default: {

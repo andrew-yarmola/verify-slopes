@@ -223,7 +223,7 @@ const bool large_horoball(const SL2ACJ& x, const ACJParams& p) {
 // Conditions checked:
 //  1) word is not a parabolic fixing infinity anywhere in the box
 //  2) word(infinity_horoball) intersects infinity_horoball
-void verify_killed(char* where, char* word)
+void verify_large_horoball(char* where, char* word)
 {
     Box box = build_box(where);
     SL2ACJ w = construct_word(box.cover, word);
@@ -235,7 +235,7 @@ void verify_killed(char* where, char* word)
 // Conditions checked:
 //  1) word has non-zero g-length at most g_len
 //  2) word(infinity_horoball) intersects infinity_horoball
-void verify_len(char* where, char* word, int g_len)
+void verify_g_length(char* where, char* word, int g_len)
 {
     Box box = build_box(where);
     SL2ACJ w = construct_word(box.cover, word);
@@ -255,10 +255,38 @@ void verify_variety(char* where, char* word)
     check((absUB(w.c) < 1) && (absUB(w.b) < 1 || absLB(w.c) > 0), where);
 }
 
-void verify_only_bad_parabolics(char* where, char* word)
+// Conditions checked:
+//  1) word has non-zero g-length at most g_len
+//  2) the box is inside the variety neighborhood for given word
+void verify_variety_g_length(char* where, char* word, int g_len)
+{
+    check(g_length(word) > 0, where);
+    check(g_length(word) <= g_len, where);
+    verify_variety(where, word);
+}
+
+void verify_bad_elliptic(char* where, char* word, char* core) {
+  // TODO FIXME
+  check(true, where);
+}
+
+// Conditions checked:
+//  1) word(infinity_horoball) intersects infinity_horoball
+//  2) if word is parabolic fixing inf, it would be too short 
+void verify_short_parabolic(char* where, char* word)
 {
     Box box = build_box(where);
     SL2ACJ w = construct_word(box.cover, word);
+
+    check(large_horoball(w, box.cover), where);
+    check(absUB(w.b) < 1 && absLB(w.b) > 0, where);
+}
+
+void verify_bad_parabolic(char* where, char* word)
+{
+    Box box = build_box(where);
+    SL2ACJ w = construct_word(box.cover, word);
+    check(large_horoball(w, box.cover), where);
 
     // Tests if w hits any lattice points (when w is parabolic).
     // This test is inconclusive is w has large transtalion (i.e. translate
@@ -319,7 +347,7 @@ const bool disk_killed_by_word(ACJ& center, ACJ& radius, const SL2ACJ& x) {
                     + absUB(x.c * radius)) < one_over_e2_min; 
 }
 
-void verify_no_e2_disks(char* where) {
+void verify_no_e2_horoball(char* where) {
     Box box = build_box(where);
     XComplex nL = box.nearer.lattice;
     XComplex fL = box.further.lattice;
