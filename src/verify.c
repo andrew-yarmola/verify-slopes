@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include "elimination.h"
 
-double g_max_area=5.24;
+double max_area = 5.93;
+double e2_area_min = 5.65; 
+double one_over_e2_min = 0.92593;
+
 
 void verify(char* where, size_t depth, size_t* count_ptr)
 {

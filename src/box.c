@@ -203,44 +203,40 @@ Box build_box(char* where) {
   return box;    
 }
 
-double disk_scale[2] = {
+double rect_scale[2] = {
   pow(2., -0. / 2.),
   pow(2., -1. / 2.)
 };
 
-void compute_center_and_radius(Rect& disk) {
+void compute_center_and_radius(Rect& rect) {
 	for (int i = 0; i < 2; ++i) {
     // GMT paper page 419 of Annals
-    // disk_size guarantees that :
-    // disk_center - disk_size <= true_center - true_size
-    // disk_center + disk_size >= true_center + true_size
+    // rect_size guarantees that :
+    // rect_center - rect_size <= true_center - true_size
+    // rect_center + rect_size >= true_center + true_size
     // where box operations are floating point. 
-    disk.center[i] = disk_scale[i] * disk.center_digits[i];
-    disk.size[i] = (1 + 2 * EPS) * (disk.size_digits[i] * disk_scale[i] +
-        HALFEPS * fabs(disk.center_digits[i]));
+    rect.center[i] = rect_scale[i] * rect.center_digits[i];
+    rect.size[i] = (1 + 2 * EPS) * (rect.size_digits[i] * rect_scale[i] +
+        HALFEPS * fabs(rect.center_digits[i]));
   }
-  // Notice that the center and radius of a disk are constant and do not
+  // Notice that the center and radius of a rect are constant and do not
   // depend on (z1, z2, z3). In particular, this is used like interval arithmetic.
-  disk.c = ACJ(XComplex(disk.center[1], disk.center[0]), 0., 0., 0.);
-  disk.r = ACJ(XComplex(disk.size[1],   disk.size[0]),   0., 0., 0.);
+  rect.c = ACJ(XComplex(rect.center[1], rect.center[0]), 0., 0., 0.);
+  rect.r = ACJ(XComplex(rect.size[1],   rect.size[0]),   0., 0., 0.);
 }
 
 Rect initial_lattice_cover() {
-	Rect child(disk);
+  Rect rect;
+  compute_center_and_radius(rect);
+  return rect;
+}
+
+Rect child(const Rect& rect, int dir) {
+	Rect child(rect);
 	child.size_digits[child.pos] *= 0.5;
 	child.center_digits[child.pos] += (2 * dir - 1) * child.size_digits[child.pos];
 	++child.pos;
 	if (child.pos == 2) { child.pos = 0; }
   compute_center_and_radius(child);
-	return child;
-}
-
-Rect child(const Rect& disk, int dir) {
-	Rect child(disk);
-	child.size_digits[pos] *= 0.5;
-	child.center_digits[pos] += (2 * dir - 1) * child.size_digits[pos];
-	++child.pos;
-	if (child.pos == 2) { child.pos = 0; }
-  child.compute_center_and_radius();
 	return child;
 }

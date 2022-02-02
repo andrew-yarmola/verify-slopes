@@ -32,11 +32,11 @@ inline const double areaLB(const XParams&nearer, char* where);
 
 void verify_out_of_bounds(char* where, char bounds_code);
 
-const int not_parabolic_at_inf(const SL2ACJ& x);
+const bool not_parabolic_at_inf(const SL2ACJ& x);
 
-const int not_identity(const SL2ACJ& x);
+const bool not_identity(const SL2ACJ& x);
 
-const int large_horoball(const SL2ACJ& x, const ACJParams& p);
+const bool large_horoball(const SL2ACJ& x, const ACJParams& p);
 
 void verify_killed(char* where, char* word);
 

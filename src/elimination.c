@@ -5,10 +5,11 @@
 #include <vector>
 
 #include "elimination.h"
-#include "e2words.h"
+#include "e2_words.h"
 
-extern double g_max_area;
-extern double g_min_e2_area;
+extern double max_area;
+extern double e2_area_min;
+extern double one_over_e2_min;
 
 // Helper functions
 
@@ -153,7 +154,7 @@ inline const double areaLB(const XParams& nearer, char* where)
 // 3. |lattice| >= 1
 // 4. Im(parabolic) <= Im(lattice)/2
 // 5. Re(parabolic) <= 1/2
-// 6. |lox_sqrt^2| Im(L) <= g_max_area (area of fundamental paralleogram)
+// 6. |lox_sqrt^2| Im(L) <= max_area (area of fundamental paralleogram)
 void verify_out_of_bounds(char* where, char bounds_code)
 {
     Box box = build_box(where);
@@ -185,7 +186,7 @@ void verify_out_of_bounds(char* where, char bounds_code)
             break; }
         case '6': {
             double area = areaLB(box.nearer, where);
-            check(area > g_max_area, where);
+            check(area > max_area, where);
             break;
         }
     }
@@ -286,7 +287,7 @@ void verify_only_bad_parabolics(char* where, char* word)
     // take absolute values at the end.
 
     ACJ T = (absUB(w.d - one) < 2 || absUB(w.a - one) < 2) ? w.b : -w.b;
-    ACJ L = p.lattice;
+    ACJ L = box.cover.lattice;
 
     ACJ d1 = T / (L + one);
     ACJ d2 = d1 - one;
@@ -299,12 +300,10 @@ void verify_only_bad_parabolics(char* where, char* word)
     check(absUB(d4) < 1, where);
 }
 
-#define ONE_OVER_E2_MIN 0.92593
-
 // Returns true if image of the infinity horoball under w
 // is smaller than a required e2 ball
 const bool smaller_than_e2_horoball(SL2ACJ& x, const ACJParams& p) {
-  return absUB(p.loxodromic_sqrt / w.c) < ONE_OVER_E2_MIN;
+  return absUB(p.loxodromic_sqrt / x.c) < one_over_e2_min;
 }
 
 const bool disk_killed_by_word(ACJ& center, ACJ& radius, const SL2ACJ& x) {
@@ -315,23 +314,23 @@ const bool disk_killed_by_word(ACJ& center, ACJ& radius, const SL2ACJ& x) {
   // We know that h >= 1/(|S| e_2^2), so an intersection is guaranteed if
   //      1/e_2 > abs(a - c q)
   // Since the disk has a radius, we need to make sure
-  //      ONE_OVER_E2_MIN > (1+EPS)*(absUB(a - c center) + absUB(c radius))
+  //      one_over_e2_min > (1+EPS)*(absUB(a - c center) + absUB(c radius))
   return (1 + EPS) * (absUB(x.a - x.c * center) 
-                    + absUB(x.c * radius)) < ONE_OVER_E2_MIN; 
+                    + absUB(x.c * radius)) < one_over_e2_min; 
 }
 
 void verify_no_e2_disks(char* where) {
     Box box = build_box(where);
-    ACJParams cover = box.cover;
     XComplex nL = box.nearer.lattice;
     XComplex fL = box.further.lattice;
 
     std::vector<SL2ACJ> e2_mats;
     for (int i = 0; i < NUM_E2_WORDS; ++i) {
-        e2_mats.push(construct_word(box.cover, e2_words[i]));
+        e2_mats.push_back(construct_word(box.cover, e2_words[i]));
     }
 
-    std::queue lattice_cover = {initial_lattice_cover()};
+    std::queue<Rect> lattice_cover;
+    lattice_cover.push(initial_lattice_cover());
     while (!lattice_cover.empty()) {
         bool rect_killed = false;
         Rect current = lattice_cover.front();
@@ -353,16 +352,16 @@ void verify_no_e2_disks(char* where) {
             (1 + 2 * EPS) * ((absUB(r) - fL.re) + c.f.re) < 0)
          || // Chek if re L > 0 and rect is right of x = 1 + re L 
             (fL.re > 0 && c.f.re > 1 + fL.re &&
-            (1 + 2 * EPS) * ((fL.re + 1) + (absUB(r) - c.f.re)) < 0)) {
+            (1 + 2 * EPS) * ((fL.re + 1) + (absUB(r) - c.f.re)) < 0))
+        {
           rect_killed = true;
         } else { 
-            double area_lb = areaLB(box.nearer);
-            if (area_lb >= g_min_e2_area) {
-                for (int i = 0; i < NUM_E2_WORDS; ++i) {
-                    int g_len = g_length(e2_words[i]);
-                    SL2ACJ w = construct_word(box.cover, e2_words[i]);
-                    if (g_len > 1 && smaller_than_e2_horoball(w, box.cover) &&
-                        disk_killed_by_word(c, r, w)) {
+            double area_lb = areaLB(box.nearer, where);
+            if (area_lb >= e2_area_min) {
+                for (SL2ACJ w : e2_mats) {
+                    if (smaller_than_e2_horoball(w, box.cover) &&
+                        disk_killed_by_word(c, r, w))
+                    {
                         rect_killed = true;
                         break;
                     }
